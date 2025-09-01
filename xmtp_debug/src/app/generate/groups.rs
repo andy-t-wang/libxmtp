@@ -58,9 +58,9 @@ impl GenerateGroups {
             let identity = self
                 .identity_store
                 .random(network, &mut rng)?
-                .with_context(
-                    || "no local identities found in database, have identities been generated?",
-                )?;
+                .with_context(|| {
+                    "no local identities found in database, have identities been generated?"
+                })?;
             let invitees = self.identity_store.random_n(network, &mut rng, invitees)?;
             let bar_pointer = bar.clone();
             let network = network.clone();
@@ -77,18 +77,25 @@ impl GenerateGroups {
                     .map(|i| hex::encode(i.inbox_id))
                     .collect::<Vec<_>>();
                 let group = client.create_group(Default::default(), Default::default())?;
-                
+
                 // Sync the group to ensure it's ready before updating metadata
                 if let Err(e) = group.sync().await {
-                    warn!("Failed to sync group {}: {}", hex::encode(&group.group_id), e);
+                    warn!(
+                        "Failed to sync group {}: {}",
+                        hex::encode(&group.group_id),
+                        e
+                    );
                 }
-                
+
                 // Set the group name to a short timestamp for easy identification
-                let group_name = format!("test-{}", std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_secs());
-                
+                let group_name = format!(
+                    "group-{}",
+                    std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs()
+                );
+
                 if let Err(e) = group.update_group_name(group_name.clone()).await {
                     warn!("Failed to set group name to {}: {}", group_name, e);
                 } else {
@@ -97,7 +104,7 @@ impl GenerateGroups {
                         warn!("Failed to sync group after naming: {}", e);
                     }
                 }
-                
+
                 group.add_members_by_inbox_id(ids.as_slice()).await?;
                 bar_pointer.inc(1);
                 let mut members = invitees
@@ -169,9 +176,9 @@ impl GenerateGroups {
             let identity = self
                 .identity_store
                 .random(network, &mut rng)?
-                .with_context(
-                    || "no local identities found in database, have identities been generated?",
-                )?;
+                .with_context(|| {
+                    "no local identities found in database, have identities been generated?"
+                })?;
             let bar_pointer = bar.clone();
             let network = network.clone();
             let target_inbox = target_inbox.clone();
@@ -183,13 +190,15 @@ impl GenerateGroups {
 
                 debug!(address = identity.address(), target = %target_inbox, "creating DM");
                 let client = app::client_from_identity(&identity, &network).await?;
-                
+
                 // Use find_or_create_dm_by_inbox_id to create a true DM conversation
-                let dm = client.find_or_create_dm_by_inbox_id(target_inbox.to_string(), None).await?;
-                
+                let dm = client
+                    .find_or_create_dm_by_inbox_id(target_inbox.to_string(), None)
+                    .await?;
+
                 bar_pointer.inc(1);
                 let members = vec![identity.inbox_id.clone(), *target_inbox];
-                
+
                 Ok(Group {
                     id: dm
                         .group_id
@@ -228,7 +237,11 @@ impl GenerateGroups {
             }
         }
         self.group_store.set_all(dms.as_slice(), &self.network)?;
-        info!("Created {} true DM conversations with target inbox {}", dms.len(), target_inbox);
+        info!(
+            "Created {} true DM conversations with target inbox {}",
+            dms.len(),
+            target_inbox
+        );
         Ok(dms)
     }
 }
