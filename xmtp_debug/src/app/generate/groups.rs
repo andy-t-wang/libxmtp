@@ -83,10 +83,15 @@ impl GenerateGroups {
                     warn!("Failed to sync group {}: {}", hex::encode(&group.group_id), e);
                 }
                 
-                // Set the group name to the group_id for easy identification
-                let group_id_hex = hex::encode(&group.group_id);
-                if let Err(e) = group.update_group_name(group_id_hex.clone()).await {
-                    warn!("Failed to set group name to {}: {}", group_id_hex, e);
+                // Set the group name to a short timestamp for easy identification
+                let group_name = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs()
+                    .to_string();
+                
+                if let Err(e) = group.update_group_name(group_name.clone()).await {
+                    warn!("Failed to set group name to {}: {}", group_name, e);
                 } else {
                     // Sync again to make sure the name update is processed
                     if let Err(e) = group.sync().await {
@@ -95,7 +100,7 @@ impl GenerateGroups {
                     
                     // Verify the name was set correctly
                     match group.group_name() {
-                        Ok(name) => info!("✅ Group {} named successfully: '{}'", group_id_hex, name),
+                        Ok(name) => info!("✅ Group {} named successfully: '{}'", hex::encode(&group.group_id), name),
                         Err(e) => warn!("Failed to retrieve group name: {}", e),
                     }
                 }
