@@ -89,14 +89,14 @@ impl GenerateGroups {
                     .unwrap()
                     .as_secs());
                 
-                info!(?group_name, group_id = hex::encode(&group.group_id), "setting group name");
+                println!("🏷️  SETTING GROUP NAME: {} for group {}", group_name, hex::encode(&group.group_id));
                 if let Err(e) = group.update_group_name(group_name.clone()).await {
-                    warn!("Failed to set group name to {}: {}", group_name, e);
+                    println!("❌ Failed to set group name to {}: {}", group_name, e);
                 } else {
                     // Sync again multiple times to make sure the name update is fully processed
                     for i in 0..3 {
                         if let Err(e) = group.sync().await {
-                            warn!("Failed to sync group after naming (attempt {}): {}", i+1, e);
+                            println!("⚠️  Failed to sync group after naming (attempt {}): {}", i+1, e);
                         }
                         tokio::time::sleep(std::time::Duration::from_millis(100)).await;
                     }
@@ -105,12 +105,12 @@ impl GenerateGroups {
                     match group.group_name() {
                         Ok(name) => {
                             if name.is_empty() {
-                                warn!("Group {} name appears empty after setting to '{}'", hex::encode(&group.group_id), group_name);
+                                println!("⚠️  Group {} name appears EMPTY after setting to '{}'", hex::encode(&group.group_id), group_name);
                             } else {
-                                info!(?group_name, group_id = hex::encode(&group.group_id), "group named successfully");
+                                println!("✅ GROUP NAMED SUCCESSFULLY: '{}' for group {}", name, hex::encode(&group.group_id));
                             }
                         },
-                        Err(e) => warn!("Failed to retrieve group name: {}", e),
+                        Err(e) => println!("❌ Failed to retrieve group name: {}", e),
                     }
                 }
                 
