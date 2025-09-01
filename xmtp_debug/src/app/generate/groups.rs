@@ -77,6 +77,13 @@ impl GenerateGroups {
                     .map(|i| hex::encode(i.inbox_id))
                     .collect::<Vec<_>>();
                 let group = client.create_group(Default::default(), Default::default())?;
+                
+                // Set the group name to the group_id for easy identification
+                let group_id_hex = hex::encode(&group.group_id);
+                if let Err(e) = group.update_group_name(group_id_hex.clone()).await {
+                    warn!("Failed to set group name to {}: {}", group_id_hex, e);
+                }
+                
                 group.add_members_by_inbox_id(ids.as_slice()).await?;
                 bar_pointer.inc(1);
                 let mut members = invitees
