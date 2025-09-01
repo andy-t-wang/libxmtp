@@ -64,6 +64,18 @@ impl Export {
                     writer.flush()?;
                 };
             }
+            Dm => {
+                // DMs are stored as groups in the database, so we can reuse the group export logic
+                let store: GroupStore = store.into();
+                if let Some(groups) = store.load(&network)? {
+                    let groups = groups
+                        .map(|g| GroupExport::from(g.value()))
+                        .collect::<Vec<_>>();
+                    let json = miniserde::json::to_string(&groups);
+                    writer.write_all(json.as_bytes())?;
+                    writer.flush()?;
+                };
+            }
             Message => todo!(),
         }
         Ok(())

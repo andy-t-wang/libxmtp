@@ -30,6 +30,7 @@ impl Generate {
             entity,
             amount,
             invite,
+            target_inbox,
             message_opts,
             concurrency,
         } = opts;
@@ -56,6 +57,16 @@ impl Generate {
                     .create_identities(amount, *concurrency)
                     .await?;
                 info!("identities generated");
+                Ok(())
+            }
+            Dm => {
+                let target_inbox = target_inbox.ok_or_else(|| {
+                    color_eyre::eyre::eyre!("target-inbox is required when generating DMs")
+                })?;
+                GenerateGroups::new(db, network)
+                    .create_dms(amount, target_inbox, *concurrency)
+                    .await?;
+                info!("DMs generated");
                 Ok(())
             }
         }

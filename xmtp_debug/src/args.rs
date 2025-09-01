@@ -67,6 +67,9 @@ pub struct Generate {
     /// Specify amount of random identities to invite to group
     #[arg(long)]
     pub invite: Option<usize>,
+    /// Target inbox ID for DM creation (required when entity=dm)
+    #[arg(long)]
+    pub target_inbox: Option<InboxId>,
     #[command(flatten)]
     pub message_opts: MessageGenerateOpts,
     /// Maximum number of concurrent tasks to use during generation.
@@ -185,6 +188,7 @@ pub enum EntityKind {
     Group,
     Message,
     Identity,
+    Dm,
 }
 
 impl std::fmt::Display for EntityKind {
@@ -194,6 +198,7 @@ impl std::fmt::Display for EntityKind {
             Group => write!(f, "group"),
             Message => write!(f, "message"),
             Identity => write!(f, "identity"),
+            Dm => write!(f, "dm"),
         }
     }
 }
