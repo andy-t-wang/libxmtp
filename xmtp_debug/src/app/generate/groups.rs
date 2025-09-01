@@ -196,6 +196,32 @@ impl GenerateGroups {
                     .find_or_create_dm_by_inbox_id(target_inbox.to_string(), None)
                     .await?;
 
+                // Sync the DM to ensure it's ready and published to the network
+                if let Err(e) = dm.sync().await {
+                    warn!(
+                        "Failed to sync DM {}: {}",
+                        hex::encode(&dm.group_id),
+                        e
+                    );
+                }
+
+                // Send a welcome message to establish the DM conversation
+                let welcome_msg = format!("Load test DM initiated at {}", 
+                    std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs()
+                );
+                
+                if let Err(e) = dm.send_message(welcome_msg.as_bytes()).await {
+                    warn!("Failed to send welcome message to DM: {}", e);
+                } else {
+                    // Sync after sending to ensure message is published
+                    if let Err(e) = dm.sync().await {
+                        warn!("Failed to sync DM after welcome message: {}", e);
+                    }
+                }
+
                 bar_pointer.inc(1);
                 let members = vec![identity.inbox_id.clone(), *target_inbox];
 
