@@ -84,23 +84,32 @@ impl GenerateGroups {
                 }
                 
                 // Set the group name to a short timestamp for easy identification
-                let group_name = std::time::SystemTime::now()
+                let group_name = format!("test-{}", std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
-                    .as_secs()
-                    .to_string();
+                    .as_secs());
                 
+                info!(?group_name, group_id = hex::encode(&group.group_id), "setting group name");
                 if let Err(e) = group.update_group_name(group_name.clone()).await {
                     warn!("Failed to set group name to {}: {}", group_name, e);
                 } else {
-                    // Sync again to make sure the name update is processed
-                    if let Err(e) = group.sync().await {
-                        warn!("Failed to sync group after naming: {}", e);
+                    // Sync again multiple times to make sure the name update is fully processed
+                    for i in 0..3 {
+                        if let Err(e) = group.sync().await {
+                            warn!("Failed to sync group after naming (attempt {}): {}", i+1, e);
+                        }
+                        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
                     }
                     
                     // Verify the name was set correctly
                     match group.group_name() {
-                        Ok(name) => info!("✅ Group {} named successfully: '{}'", hex::encode(&group.group_id), name),
+                        Ok(name) => {
+                            if name.is_empty() {
+                                warn!("Group {} name appears empty after setting to '{}'", hex::encode(&group.group_id), group_name);
+                            } else {
+                                info!(?group_name, group_id = hex::encode(&group.group_id), "group named successfully");
+                            }
+                        },
                         Err(e) => warn!("Failed to retrieve group name: {}", e),
                     }
                 }
