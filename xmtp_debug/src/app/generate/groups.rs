@@ -78,10 +78,26 @@ impl GenerateGroups {
                     .collect::<Vec<_>>();
                 let group = client.create_group(Default::default(), Default::default())?;
                 
+                // Sync the group to ensure it's ready before updating metadata
+                if let Err(e) = group.sync().await {
+                    warn!("Failed to sync group {}: {}", hex::encode(&group.group_id), e);
+                }
+                
                 // Set the group name to the group_id for easy identification
                 let group_id_hex = hex::encode(&group.group_id);
                 if let Err(e) = group.update_group_name(group_id_hex.clone()).await {
                     warn!("Failed to set group name to {}: {}", group_id_hex, e);
+                } else {
+                    // Sync again to make sure the name update is processed
+                    if let Err(e) = group.sync().await {
+                        warn!("Failed to sync group after naming: {}", e);
+                    }
+                    
+                    // Verify the name was set correctly
+                    match group.group_name() {
+                        Ok(name) => info!("✅ Group {} named successfully: '{}'", group_id_hex, name),
+                        Err(e) => warn!("Failed to retrieve group name: {}", e),
+                    }
                 }
                 
                 group.add_members_by_inbox_id(ids.as_slice()).await?;
