@@ -89,28 +89,12 @@ impl GenerateGroups {
                     .unwrap()
                     .as_secs());
                 
-                println!("🏷️  SETTING GROUP NAME: {} for group {}", group_name, hex::encode(&group.group_id));
                 if let Err(e) = group.update_group_name(group_name.clone()).await {
-                    println!("❌ Failed to set group name to {}: {}", group_name, e);
+                    warn!("Failed to set group name to {}: {}", group_name, e);
                 } else {
-                    // Sync again multiple times to make sure the name update is fully processed
-                    for i in 0..3 {
-                        if let Err(e) = group.sync().await {
-                            println!("⚠️  Failed to sync group after naming (attempt {}): {}", i+1, e);
-                        }
-                        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-                    }
-                    
-                    // Verify the name was set correctly
-                    match group.group_name() {
-                        Ok(name) => {
-                            if name.is_empty() {
-                                println!("⚠️  Group {} name appears EMPTY after setting to '{}'", hex::encode(&group.group_id), group_name);
-                            } else {
-                                println!("✅ GROUP NAMED SUCCESSFULLY: '{}' for group {}", name, hex::encode(&group.group_id));
-                            }
-                        },
-                        Err(e) => println!("❌ Failed to retrieve group name: {}", e),
+                    // Sync to ensure the name update is processed
+                    if let Err(e) = group.sync().await {
+                        warn!("Failed to sync group after naming: {}", e);
                     }
                 }
                 
