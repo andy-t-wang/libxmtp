@@ -4,7 +4,8 @@ use tempfile::TempDir;
 use std::sync::LazyLock;
 use url::Url;
 
-pub static XMTP_PRODUCTION: LazyLock<Url> = LazyLock::new(|| Url::parse("").unwrap());
+pub static XMTP_PRODUCTION: LazyLock<Url> =
+    LazyLock::new(|| Url::parse("https://grpc.production.xmtp.network:443").unwrap());
 pub static XMTP_DEV: LazyLock<Url> =
     LazyLock::new(|| Url::parse("https://grpc.dev.xmtp.network:443").unwrap());
 pub static XMTP_LOCAL: LazyLock<Url> =
